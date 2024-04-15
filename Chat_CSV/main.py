@@ -6,20 +6,17 @@ from langchain_experimental.agents.agent_toolkits import (
     create_pandas_dataframe_agent,
 )
 from dotenv import load_dotenv
-
-# from langchain.agents.agent_types import AgentType
+import pandas as pd
 
 load_dotenv()
 
 
-def response_generator(query):
-    agent = create_csv_agent(
-        OpenAI(temperature=0),
-        "Titanic-Dataset.csv",
-        verbose=True,
-    )
+if "agent" not in st.session_state:
+    st.session_state.agent = None
 
-    response = agent.invoke(query)["output"]
+
+def response_generator(query):
+    response = st.session_state.agent.invoke(query)["output"]
 
     for word in response.split():
         yield word + " "
@@ -32,9 +29,16 @@ def main():
     st.header("Ask your CSV 📈")
 
     with st.sidebar:
-        csv_file = st.file_uploader("Choose a CSV File", type="csv")
+        file = st.file_uploader("Choose a CSV File", type=["csv"])
 
-    if csv_file is not None:
+    if file is not None:
+        # create an agent
+        st.session_state.agent = create_csv_agent(
+            OpenAI(temperature=0),
+            file,
+            verbose=True,
+        )
+
         # Initialize chat history
         if "messages" not in st.session_state:
             st.session_state.messages = []
